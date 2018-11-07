@@ -7,49 +7,36 @@ import Data.Array
 main :: IO ()
 main = do
   hspec $ do
-    describe "determine max grid size" $ do
-      it "returns the max grid size from the  command" $ do
-        maxGridSize [ON (2,3) (4,5)] `shouldBe`  (4, 5)
-      it "returns the max grid size from the  command" $ do
-        maxGridSize [ON (2,3) (4,5), OFF (8,9) (1,2)] `shouldBe`  (8, 9)
-      it "returns the max grid size from the  command" $ do
-        maxGridSize [] `shouldBe`  (0,0)
+    describe "maxGridSize" $ do
+      let shouldGive input expected = it (show input) $ maxGridSize input `shouldBe` expected
+      [ON (2,3) (4,5)] `shouldGive` (4, 5)
+      [ON (2,3) (4,5), OFF (8,9) (1,2)] `shouldGive` (8, 9)
+      [] `shouldGive` (0,0)
 
-    describe "1x1 grids" $ do
-      it "a 1 x 1 grid contains one on light" $ do
-        processCommands [ON (0,0) (0,0)] `shouldBe` listArray ((0,0), (0,0)) [True]
-      it "a 1 x 1 grid contains one off light" $ do
-        processCommands [OFF (0,0) (0,0)] `shouldBe` listArray ((0,0), (0,0)) [False]
-      it "a 1 x 1 grid contains toggles an off light to an on light" $ do
-        processCommands [TOGGLE (0,0) (0,0)] `shouldBe` listArray ((0,0), (0,0)) [True]
-      it "toggles a light on then off" $ do
-        processCommands [TOGGLE (0,0) (0,0), TOGGLE (0,0) (0,0)] `shouldBe` listArray ((0,0), (0,0)) [False]
-      it "can turn a light on then off" $ do
-        processCommands [ON (0,0) (0,0), OFF (0,0) (0,0)] `shouldBe` listArray ((0,0), (0,0)) [False]
-      it "returns a 1 x 1 grid with empty input" $ do
-        processCommands [] `shouldBe` listArray ((0,0), (0,0)) [False]
-    
-    describe "2x1 grids" $ do
-      it "can turn all lights on" $ do
-        processCommands [ON (0,0) (1,0)] `shouldBe` listArray ((0,0), (1,0)) [True, True]
-      it "can toggle all lights to on" $ do
-        processCommands [TOGGLE (0,0) (1,0)] `shouldBe` listArray ((0,0), (1,0)) [True, True]
-      it "can toggle a light on" $ do
-        processCommands [ON (1,0) (1,0)] `shouldBe` listArray ((0,0), (1,0)) [False, True]
+    describe "processCommands" $ do
+      let shouldGive input expected = it (show input) $ processCommands input `shouldBe` expected
 
-    describe "pretty printing arrays of lights" $ do
-      it "can print a 1 x 1 grid" $ do
-        showBoard (processCommands []) `shouldBe` "　\n"
-      it "can print a 2 x 1 grid" $ do
-        showBoard (processCommands [OFF (0,1) (0,1)]) `shouldBe` "　\n　\n"
-      it "can print a 2 x 2 grid" $ do
-        showBoard (processCommands [OFF (1,1) (1,1)]) `shouldBe` "　　\n　　\n"
-      it "can print a 1 x 1 grid with a light on" $ do
-        showBoard (processCommands [ON (0,0) (0,0)]) `shouldBe` "💡\n"
-      it "can print a 2 x 2 grid with a light on" $ do
-        showBoard (processCommands [OFF (1,1) (1,1), ON (1,0) (1,0)]) `shouldBe` "　💡\n　　\n"
-      it "can print a 2 x 2 grid with two lights on" $ do
-        showBoard (processCommands [ON (1,0) (1,1)]) `shouldBe` "　💡\n　💡\n"
+      describe "(1x1)" $ do
+        [ON (0,0) (0,0)] `shouldGive` listArray00 (0,0) [True]
+        [OFF (0,0) (0,0)] `shouldGive` listArray00 (0,0) [False]
+        [TOGGLE (0,0) (0,0)] `shouldGive` listArray00 (0,0) [True]
+        [TOGGLE (0,0) (0,0), TOGGLE (0,0) (0,0)] `shouldGive` listArray00 (0,0) [False]
+        [ON (0,0) (0,0), OFF (0,0) (0,0)] `shouldGive` listArray00 (0,0) [False]
+        [] `shouldGive` listArray00 (0,0) [False]
+      
+      describe "(2x1)" $ do
+        [ON (0,0) (1,0)]     `shouldGive` listArray00 (1,0) [True, True]
+        [TOGGLE (0,0) (1,0)] `shouldGive` listArray00 (1,0) [True, True]
+        [ON (1,0) (1,0)]     `shouldGive` listArray00 (1,0) [False, True]
+
+    describe "showBoard" $ do
+      let shouldGive input expected = it (show input) $ showBoard (processCommands input) `shouldBe` expected
+      [] `shouldGive` "　\n"
+      [OFF (0,1) (0,1)] `shouldGive` "　\n　\n"
+      [OFF (1,1) (1,1)] `shouldGive` "　　\n　　\n"
+      [ON (0,0) (0,0)] `shouldGive` "💡\n"
+      [OFF (1,1) (1,1), ON (1,0) (1,0)] `shouldGive` "　💡\n　　\n"
+      [ON (1,0) (1,1)] `shouldGive` "　💡\n　💡\n"
 
   putStr $ showBoard $ processCommands $ inputCommands 10 6
   putStr $ showBoard $ processCommands $ inputCommands 30 30
@@ -63,6 +50,9 @@ data Command = ON     (Int,Int) (Int,Int)
              | OFF    (Int,Int) (Int,Int)
              | TOGGLE (Int,Int) (Int,Int)
   deriving (Show, Eq)
+
+listArray00 :: (Int,Int) -> [Bool] -> LightsBoard
+listArray00 xy = listArray ((0,0),xy)
 
 rectangle :: Command -> ((Int,Int),(Int,Int))
 rectangle (ON     ab cd) = (ab,cd)
